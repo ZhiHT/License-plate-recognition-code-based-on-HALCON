@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="24.11.1.0">
+<procedure name="main">
+<interface/>
+<body>
+<l>read_ocr_class_mlp ('C:/Users/TigerZhi02/Desktop/halcon课设/charact.omc', OCRHandle)</l>
+<l>list_files ('C:/Users/TigerZhi02/Desktop/halcon课设/素材', ['files','follow_links'], ImageFiles)</l>
+<l>tuple_regexp_select (ImageFiles, ['\\.(tif|tiff|gif|bmp|jpg|jpeg|jp2|png|pcx|pgm|ppm|pbm|xwd|ima|hobj)$','ignore_case'], ImageFiles)</l>
+<c></c>
+<l>for Index := 0 to |ImageFiles| - 1 by 1</l>
+<l>    read_image (Image, ImageFiles[Index])</l>
+<l>    get_image_size (Image, Width, Height)</l>
+<l>    dev_open_window_fit_size (0, 0, Width, Height, -1, -1, WindowHandle)</l>
+<l>    dev_set_draw ('fill')</l>
+<c>    </c>
+<c>    * 图像旋转校正</c>
+<l>    text_line_orientation (Image, Image, 50, rad(-50), rad(50), OrientationAngle)</l>
+<l>    rotate_image (Image, ImageRotate, -OrientationAngle / rad(180) * 180, 'constant')</l>
+<l>    median_image (ImageRotate, ImageMedian, 'circle', 5.5, 'mirrored')</l>
+<c>    </c>
+<c>    * 直接手动框选车牌</c>
+<l>    dev_display (ImageRotate)</l>
+<l>    disp_message (WindowHandle, '请拖拽框选车牌区域', 'window', 12, 12, 'red', 'true')</l>
+<l>    draw_rectangle1 (WindowHandle, Row1, Col1, Row2, Col2)</l>
+<l>    gen_rectangle1 (ROI, Row1, Col1, Row2, Col2)</l>
+<c>    </c>
+<c>    * 字符分割与识别</c>
+<l>    erosion_rectangle1 (ROI, RegionErosion, 35, 80)</l>
+<l>    reduce_domain (ImageMedian, RegionErosion, ImageReduced)</l>
+<l>    binary_threshold (ImageReduced, Region1, 'max_separability', 'light', UsedThreshold1)</l>
+<l>    connection (Region1, ConnectedRegions1)</l>
+<l>    select_shape (ConnectedRegions1, SelectedRegions1, ['contlength','area'], 'and', [105, 500],[150000,100000])</l>
+<l>    dilation_circle (SelectedRegions1, RegionDilation, 8)</l>
+<l>    union1 (RegionDilation, RegionUnion)</l>
+<l>    connection (RegionUnion, ConnectedRegions3)</l>
+<l>    intersection (ConnectedRegions3, SelectedRegions1, RegionIntersection)</l>
+<l>    sort_region (RegionIntersection, SortedRegions, 'character', 'true', 'row')</l>
+<c>    </c>
+<l>    do_ocr_multi_class_mlp (SortedRegions, ImageReduced, OCRHandle, Class, Confidence)</l>
+<c>    </c>
+<l>    dev_set_color ('red')</l>
+<l>    dev_set_draw ('margin')</l>
+<l>    dev_set_line_width (2)</l>
+<l>    dev_display (ImageRotate)</l>
+<l>    dev_display (ROI)</l>
+<l>    disp_message (WindowHandle, Class, 'window', 0, 0, 'red', 'true') </l>
+<l>    stop ()</l>
+<l>endfor</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>
